@@ -155,21 +155,99 @@ class ManageVehicles:
                 listvehiclelostticket.append(receipt.Vehicle)
         return listvehiclelostticket
 
+    def getWarningVehicles(self):
+        current_datetime = datetime.datetime.now()
+        warning_vehicles = []
+
+        for receipt in self.ListReceipt:
+            entry_time = receipt.TimeIn
+            vehicle_type = receipt.Vehicle.Type
+            delta_days = (current_datetime - entry_time).days
+
+            if (vehicle_type == "bike" and delta_days >= 3) or (vehicle_type == "motorbike" and delta_days >= 5):
+                warning_vehicles.append(receipt.Vehicle)
+
+        return warning_vehicles
+
+    def getLostTicketsToday(self):
+        current_datetime = datetime.datetime.now()
+
+        start_time = current_datetime.replace(hour=8, minute=0, second=0, microsecond=0)
+        end_time = current_datetime.replace(hour=22, minute=0, second=0, microsecond=0)
+
+        lost_tickets = []
+
+        for receipt in manage_vehicles.ListReceipt:
+            if start_time <= receipt.TimeIn <= end_time:
+                if receipt.isLossTicket:
+                    lost_tickets.append(receipt.Vehicle)
+
+        return lost_tickets
+
+    def getDuplicateEntries(self):
+        current_datetime = datetime.datetime.now()
+
+        start_time = current_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_time = current_datetime.replace(hour=23, minute=51, second=0, microsecond=999999)
+
+        vehicles_in_day = {}
+        duplicate_vehicles = []
+
+        for receipt in self.ListReceipt:
+            entry_time = receipt.TimeIn
+            vehicle_license = receipt.Vehicle.LicensePlate
+
+            if start_time <= entry_time <= end_time:
+                if vehicle_license in vehicles_in_day:
+                    vehicles_in_day[vehicle_license] += 1
+                else:
+                    vehicles_in_day[vehicle_license] = 1
+
+                if vehicles_in_day[vehicle_license] == 2:
+                    duplicate_vehicles.append(receipt.Vehicle)
+
+        return duplicate_vehicles
+
+
 managevehicles = ManageVehicles(100)
-vehicle1 = Vehicle("motorbike", "111")
-vehicle2 = Vehicle("bike", "222")
-vehicle3 = Vehicle("motorbike", "333")
-print(managevehicles.getAmountVehicle())
-ticket1 = managevehicles.VehicleIn(vehicle1)
-save = ticket1.TimeIn
-print(managevehicles.getAmountVehicle())
-ticket2 = managevehicles.VehicleIn(vehicle2)
-print(managevehicles.getAmountVehicle())
-vehicle11 = managevehicles.VehicleOut(vehicle1, ticket2, None)
-print(managevehicles.getAmountVehicle())
-vehicle11 = managevehicles.VehicleOut(vehicle1, ticket1, None)
-print(vehicle11.LicensePlate)
-print(managevehicles.getAmountVehicle())
-print(managevehicles.getTurnover())
+# vehicle1 = Vehicle("motorbike", "111")
+# vehicle2 = Vehicle("bike", "222")
+# vehicle3 = Vehicle("motorbike", "333")
+# print(managevehicles.getAmountVehicle())
+# ticket1 = managevehicles.VehicleIn(vehicle1)
+#
+# print(managevehicles.getAmountVehicle())
+# ticket2 = managevehicles.VehicleIn(vehicle2)
+# print(managevehicles.getAmountVehicle())
+# vehicle11 = managevehicles.VehicleOut(vehicle1, ticket2, None)
+# print(managevehicles.getAmountVehicle())
+# vehicle11 = managevehicles.VehicleOut(vehicle1, ticket1, None)
+# # print(vehicle11.LicensePlate)
+# print(managevehicles.getAmountVehicle())
+# print(managevehicles.getTurnover())
+receipt1 = Receipt(Vehicle("bike", "ABC123"), Ticket(1))
+receipt2 = Receipt(Vehicle("motorbike", "XYZ456"), Ticket(2))
+receipt3 = Receipt(Vehicle("bike", "ABC123"), Ticket(3))
+
+receipt1.TimeIn = datetime.datetime.now() - datetime.timedelta(days=0)
+receipt2.TimeIn = datetime.datetime.now() - datetime.timedelta(days=5)
+receipt3.TimeIn = datetime.datetime.now() - datetime.timedelta(days=0)
+
+manage_vehicles = ManageVehicles(100)
+manage_vehicles.ListReceipt.extend([receipt1, receipt2, receipt3])
+
+warning_vehicles = manage_vehicles.getWarningVehicles()
+for vehicle in warning_vehicles:
+    print("Warning Vehicle:", vehicle.LicensePlate)
+
+lost_tickets = manage_vehicles.getLostTicketsToday()
+print("\nLost tickets today:")
+for vehicle in lost_tickets:
+    print(vehicle.LicensePlate)
+
+duplicate_entries = manage_vehicles.getDuplicateEntries()
+print("\nDuplicate entries in a day:")
+for vehicle in duplicate_entries:
+    print("License Plate:", vehicle.LicensePlate)
 
 
